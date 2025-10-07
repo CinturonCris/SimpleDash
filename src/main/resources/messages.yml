@@ -1,0 +1,12 @@
+# Messages configuration
+# Note: Even if messages-enable is false in config.yml, it's recommended to keep the cooldown message
+# 
+# To disable specific messages individually, simply leave them empty like this: dash_ready: ""
+# Empty messages will not be sent to the player's chat
+
+dash_ready: "&aYou are ready to dash! Right-click again to dash."
+dash_used: "&bYou dashed forward!"
+cooldown_active: "&cYou must wait {seconds} seconds before dashing again."
+no_permission: "&cYou do not have permission to use the dash!"
+no_permission_reload: "&cYou do not have permission to use this command."
+config_reloaded: "&aConfiguration reloaded successfully!"

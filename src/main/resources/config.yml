@@ -1,0 +1,40 @@
+# Enable or disable messages
+messages-enable: true  # Set to false to disable all messages (recommended to keep cooldown message enabled for older clients)
+
+# Items required for the dash
+dash_item:
+  - "FEATHER"                  # Feather (vanilla)
+  - "itemsadder:fire_wand"     #Fire Wand (ItemsAdder)
+# enter the id of the material, itemsadderds is also supported,
+# only enter the namespace and id of the item. for example: dash-item: "namespace:chrismas_sword"
+
+# Or if you don't want to use ID you can use names directly, respect the colors according to your item in hand.
+dash_item_names:
+  - "&cSuper Sword"   # Sword with personalized name
+
+dash:
+  forward_power: 2.7   # Speed of the dash forward
+  upward_power: 0.8    # Vertical boost during the dash (if allowed)
+  allow_upward: false  # If false, upward boost is disabled
+  cooldown: 10         # Cooldown in seconds; 0 to disable cooldown
+  speed_multiplier: 1.2 # New option: increase or decrease dash speed
+  allow_with_shield: false # Whether the dash can be used while holding a shield in the off-hand
+
+effects:
+  enabled: true        # Enable or disable particle effects
+  type: "REVERSE_PORTAL"  # Particle type (e.g., FLAME, SMOKE, EXPLOSION_NORMAL)
+  count: 2            # Number of particles
+  offset: 0.2          # Offset for the particle spawn location
+  trail_interval: 0.2  # Distance between particles on the trail
+
+dash_sound: # The sound it will make when using the dash
+  enabled: true
+  type: "ENTITY_ENDER_DRAGON_FLAP"
+  volume: 1.0
+  pitch: 1.0
+
+cooldown_sound: # The sound it will make while trying to use the dash while in cooldown
+  enabled: true
+  type: "BLOCK_NOTE_BLOCK_BASS"
+  volume: 1.0
+  pitch: 1.0
