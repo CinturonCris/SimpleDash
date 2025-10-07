@@ -18,7 +18,8 @@ dash:
   allow_upward: false  # If false, upward boost is disabled
   cooldown: 10         # Cooldown in seconds; 0 to disable cooldown
   speed_multiplier: 1.2 # New option: increase or decrease dash speed
-  allow_with_shield: false # Whether the dash can be used while holding a shield in the off-hand
+  allow_with_shield: false # Whether the dash can be used while holding a shield in the opposite hand
+  allow_offhand_item: false # Allow using dash item in off-hand (secondary hand)
 
 effects:
   enabled: true        # Enable or disable particle effects

@@ -65,11 +65,8 @@ public class SimpleDash extends JavaPlugin implements Listener {
      */
     @EventHandler
     public void onPlayerDash(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) {
-            return;
-        }
-
         Player player = event.getPlayer();
+        EquipmentSlot hand = event.getHand();
 
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -80,17 +77,33 @@ public class SimpleDash extends JavaPlugin implements Listener {
             return;
         }
 
-        if (!hasValidDashItem(player)) {
+        boolean allowOffhandDash = getConfig().getBoolean("dash.allow_offhand_item", false);
+        
+        if (hand == EquipmentSlot.HAND) {
+            if (!hasValidDashItem(player, EquipmentSlot.HAND)) {
+                return;
+            }
+        } else if (hand == EquipmentSlot.OFF_HAND) {
+            if (!allowOffhandDash) {
+                return;
+            }
+            if (!hasValidDashItem(player, EquipmentSlot.OFF_HAND)) {
+                return;
+            }
+        } else {
             return;
         }
 
-        boolean allowOffhand = getConfig().getBoolean("dash.allow_with_shield", false);
-        ItemStack offhandItem = player.getInventory().getItem(EquipmentSlot.OFF_HAND);
-        if (!allowOffhand && offhandItem != null && offhandItem.getType() == Material.SHIELD) {
+        boolean allowShield = getConfig().getBoolean("dash.allow_with_shield", false);
+        ItemStack oppositeHandItem = (hand == EquipmentSlot.HAND) 
+            ? player.getInventory().getItem(EquipmentSlot.OFF_HAND) 
+            : player.getInventory().getItem(EquipmentSlot.HAND);
+        
+        if (!allowShield && oppositeHandItem != null && oppositeHandItem.getType() == Material.SHIELD) {
             return;
         }
 
-        handleDashClick(player);
+        handleDashClick(player, hand);
     }
     
     /*
@@ -98,7 +111,7 @@ public class SimpleDash extends JavaPlugin implements Listener {
      * Tracks player clicks, enforces cooldowns, and handles timing windows
      * between first and second clicks
      */
-    private void handleDashClick(Player player) {
+    private void handleDashClick(Player player, EquipmentSlot hand) {
         UUID playerId = player.getUniqueId();
         long currentTime = System.currentTimeMillis();
         
@@ -126,7 +139,7 @@ public class SimpleDash extends JavaPlugin implements Listener {
             }
             
             if (currentTime - readyTime < READY_TIMEOUT) {
-                executeDash(player, cooldownSeconds);
+                executeDash(player, cooldownSeconds, hand);
                 readyPlayers.remove(playerId);
                 return;
             } else {
@@ -152,12 +165,19 @@ public class SimpleDash extends JavaPlugin implements Listener {
     }
     
     /*
-     * Validates if the player is holding a valid dash item
+     * Validates if the player is holding a valid dash item in the specified hand
      * Supports both vanilla Minecraft items and custom ItemsAdder items
      * Also checks for items by display name
      */
-    private boolean hasValidDashItem(Player player) {
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+    private boolean hasValidDashItem(Player player, EquipmentSlot hand) {
+        ItemStack itemInHand = (hand == EquipmentSlot.HAND) 
+            ? player.getInventory().getItemInMainHand() 
+            : player.getInventory().getItemInOffHand();
+            
+        if (itemInHand == null || itemInHand.getType() == Material.AIR) {
+            return false;
+        }
+        
         List<String> dashItems = getConfig().getStringList("dash_item");
         List<String> dashItemNames = getConfig().getStringList("dash_item_names");
         
@@ -206,7 +226,7 @@ public class SimpleDash extends JavaPlugin implements Listener {
      * Executes the dash movement for the player
      * Applies velocity, plays sounds and effects, then sets cooldown
      */
-    private void executeDash(Player player, long cooldownSeconds) {
+    private void executeDash(Player player, long cooldownSeconds, EquipmentSlot hand) {
         double forwardPower = getConfig().getDouble("dash.forward_power", 1.5);
         double upwardPower = getConfig().getBoolean("dash.allow_upward", false) ? getConfig().getDouble("dash.upward_power", 0.5) : 0;
         double speedMultiplier = getConfig().getDouble("dash.speed_multiplier", 1.0);
@@ -220,7 +240,7 @@ public class SimpleDash extends JavaPlugin implements Listener {
 
         if (cooldownSeconds > 0) {
             cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
-            applyCooldownToHotbar(player, (int) cooldownSeconds);
+            applyCooldownToItem(player, (int) cooldownSeconds, hand);
         }
     }
 
@@ -304,15 +324,16 @@ public class SimpleDash extends JavaPlugin implements Listener {
     }
 
     /*
-     * Applies a visual cooldown indicator to all items in the player's hotbar
+     * Applies a visual cooldown indicator to the specific item used for dash
      * This provides clear feedback about when the dash can be used again
      */
-    private void applyCooldownToHotbar(Player player, int seconds) {
-        for (int i = 0; i < 9; i++) {
-            ItemStack item = player.getInventory().getItem(i);
-            if (item != null && item.getType() != Material.AIR) {
-                player.setCooldown(item.getType(), seconds * 20);
-            }
+    private void applyCooldownToItem(Player player, int seconds, EquipmentSlot hand) {
+        ItemStack item = (hand == EquipmentSlot.HAND) 
+            ? player.getInventory().getItemInMainHand() 
+            : player.getInventory().getItemInOffHand();
+            
+        if (item != null && item.getType() != Material.AIR) {
+            player.setCooldown(item.getType(), seconds * 20);
         }
     }
 
