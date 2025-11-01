@@ -7,6 +7,7 @@
 dash_ready: "&aYou are ready to dash! Right-click again to dash."
 dash_used: "&bYou dashed forward!"
 cooldown_active: "&cYou must wait {seconds} seconds before dashing again."
+shield_blocked: "&cYou can not dash while holding shield!"
 no_permission: "&cYou do not have permission to use the dash!"
 no_permission_reload: "&cYou do not have permission to use this command."
 config_reloaded: "&aConfiguration reloaded successfully!"
