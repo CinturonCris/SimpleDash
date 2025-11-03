@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -63,48 +64,60 @@ public class SimpleDash extends JavaPlugin implements Listener {
      * Handles player right-click interactions to trigger the dash mechanic
      * Validates permissions, items, and shield restrictions before proceeding
      */
-    @EventHandler
-    public void onPlayerDash(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        EquipmentSlot hand = event.getHand();
+    @EventHandler(priority = EventPriority.HIGH) // Use HIGH to run after most plugins
+public void onPlayerDash(PlayerInteractEvent event) {
+    Player player = event.getPlayer();
+    Action action = event.getAction();
 
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-
-        if (!player.hasPermission("simpledash.use")) {
-            sendMessage(player, "no_permission");
-            return;
-        }
-
-        boolean allowOffhandDash = getConfig().getBoolean("dash.allow_offhand_item", false);
-        
-        if (hand == EquipmentSlot.HAND) {
-            if (!hasValidDashItem(player, EquipmentSlot.HAND)) {
-                return;
-            }
-        } else if (hand == EquipmentSlot.OFF_HAND) {
-            if (!allowOffhandDash) {
-                return;
-            }
-            if (!hasValidDashItem(player, EquipmentSlot.OFF_HAND)) {
-                return;
-            }
-        } else {
-            return;
-        }
-
-        boolean allowShield = getConfig().getBoolean("dash.allow_with_shield", false);
-        ItemStack oppositeHandItem = (hand == EquipmentSlot.HAND) 
-            ? player.getInventory().getItem(EquipmentSlot.OFF_HAND) 
-            : player.getInventory().getItem(EquipmentSlot.HAND);
-        
-        if (!allowShield && oppositeHandItem != null && oppositeHandItem.getType() == Material.SHIELD) {
-            return;
-        }
-
-        handleDashClick(player, hand);
+    // Only right-clicks
+    if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
+        return;
     }
+
+    EquipmentSlot hand = event.getHand();
+    if (hand == null) return;
+
+    boolean allowOffhandDash = getConfig().getBoolean("dash.allow_offhand_item", false);
+    boolean isOffhand = hand == EquipmentSlot.OFF_HAND;
+
+    // Skip offhand if not allowed
+    if (isOffhand && !allowOffhandDash) {
+        return;
+    }
+
+    // Get item in the hand that triggered the event
+    ItemStack item = player.getInventory().getItem(hand);
+    if (item == null || item.getType() == Material.AIR) {
+        return; // No item → allow normal interaction
+    }
+
+    // Check if this is a dash item
+    if (!hasValidDashItem(player, hand)) {
+        return; // Not a dash item → allow normal use (e.g., place block)
+    }
+
+    // At this point: Player is holding a dash item and right-clicked
+
+    // NOW check permission
+    if (!player.hasPermission("simpledash.use")) {
+        sendMessage(player, "no_permission");
+        event.setCancelled(true); // ← ONLY cancel if trying to dash without perm
+        return;
+    }
+
+    // Check shield in opposite hand
+    boolean allowShield = getConfig().getBoolean("dash.allow_with_shield", false);
+    ItemStack oppositeHandItem = isOffhand 
+        ? player.getInventory().getItemInMainHand() 
+        : player.getInventory().getItemInOffHand();
+
+    if (!allowShield && oppositeHandItem != null && oppositeHandItem.getType() == Material.SHIELD) {
+        sendMessage(player, "shield_blocked"); // optional
+        return;
+    }
+
+    handleDashClick(player, hand);
+}
     
     /*
      * Manages the double-click dash activation system
